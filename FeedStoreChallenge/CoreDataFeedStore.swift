@@ -27,10 +27,12 @@ private class ManagedCache: NSManagedObject {
 public final class CoreDataFeedStore: FeedStore {
     private let container: NSPersistentContainer
     
-    public init(bundle: Bundle = .main) {
+    public init(storeURL: URL, bundle: Bundle = .main) {
         let modelURL = bundle.url(forResource: "CoreDataFeedStore", withExtension: "momd")!
         let model = NSManagedObjectModel(contentsOf: modelURL)!
         container = NSPersistentContainer(name: "CoreDataFeedStore", managedObjectModel: model)
+        let description = NSPersistentStoreDescription(url: storeURL)
+        container.persistentStoreDescriptions = [description]
         container.loadPersistentStores { storeDescription, error in
             if let error = error {
                 print("Unresolved error \(error)")
