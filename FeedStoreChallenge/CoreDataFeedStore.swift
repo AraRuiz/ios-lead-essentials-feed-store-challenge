@@ -25,9 +25,18 @@ private class ManagedCache: NSManagedObject {
 }
 
 public final class CoreDataFeedStore: FeedStore {
-//    private let container: NSPersistentContainer
+    private let container: NSPersistentContainer
     
-    public init() {}
+    public init() {
+        let modelURL = Bundle(for: type(of: self)).url(forResource: "CoreDataFeedStore", withExtension: "momd")!
+        let model = NSManagedObjectModel(contentsOf: modelURL)!
+        container = NSPersistentContainer(name: "CoreDataFeedStore", managedObjectModel: model)
+        container.loadPersistentStores { storeDescription, error in
+            if let error = error {
+                print("Unresolved error \(error)")
+            }
+        }
+    }
     
     public func deleteCachedFeed(completion: @escaping DeletionCompletion) {}
     
