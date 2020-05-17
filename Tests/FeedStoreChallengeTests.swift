@@ -4,6 +4,22 @@
 
 import XCTest
 import FeedStoreChallenge
+import CoreData
+
+@objc(ManagedFeedImage)
+private class ManagedFeedImage: NSManagedObject {
+    @NSManaged public var id: UUID
+    @NSManaged public var imageDescription: String?
+    @NSManaged public var location: String?
+    @NSManaged public var url: URL
+    @NSManaged public var cache: ManagedCache
+}
+
+@objc(ManagedCache)
+private class ManagedCache: NSManagedObject {
+    @NSManaged public var timestamp: Date
+    @NSManaged public var feed: NSOrderedSet
+}
 
 class CoreDataFeedStore: FeedStore {
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {}
