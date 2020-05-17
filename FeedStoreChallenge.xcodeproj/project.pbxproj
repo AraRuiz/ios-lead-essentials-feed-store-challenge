@@ -87,11 +87,11 @@
 		08CE2B8D2285BBD100183A1B /* FeedStoreChallenge */ = {
 			isa = PBXGroup;
 			children = (
+				115D77F22471A8CF00187186 /* CoreDataFeedStore.swift */,
 				08CE2BA72285BCC600183A1B /* LocalFeedImage.swift */,
 				08CE2BA52285BCB600183A1B /* FeedStore.swift */,
 				08CE2B8F2285BBD100183A1B /* Info.plist */,
 				115D77DF2471A06000187186 /* CoreDataFeedStore.xcdatamodeld */,
-				115D77F22471A8CF00187186 /* CoreDataFeedStore.swift */,
 			);
 			path = FeedStoreChallenge;
 			sourceTree = "<group>";

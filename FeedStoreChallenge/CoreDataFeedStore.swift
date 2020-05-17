@@ -27,8 +27,8 @@ private class ManagedCache: NSManagedObject {
 public final class CoreDataFeedStore: FeedStore {
     private let container: NSPersistentContainer
     
-    public init() {
-        let modelURL = Bundle(for: type(of: self)).url(forResource: "CoreDataFeedStore", withExtension: "momd")!
+    public init(bundle: Bundle = .main) {
+        let modelURL = bundle.url(forResource: "CoreDataFeedStore", withExtension: "momd")!
         let model = NSManagedObjectModel(contentsOf: modelURL)!
         container = NSPersistentContainer(name: "CoreDataFeedStore", managedObjectModel: model)
         container.loadPersistentStores { storeDescription, error in
