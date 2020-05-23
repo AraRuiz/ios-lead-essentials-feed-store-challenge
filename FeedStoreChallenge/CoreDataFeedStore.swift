@@ -22,6 +22,12 @@ private class ManagedFeedImage: NSManagedObject {
 private class ManagedCache: NSManagedObject {
     @NSManaged public var timestamp: Date
     @NSManaged public var feed: NSOrderedSet
+    
+    static func uniqueManagedCache(in context: NSManagedObjectContext) throws -> ManagedCache {
+        let request = NSFetchRequest<ManagedCache>(entityName: "ManagedCache")
+        try context.fetch(request).first.map(context.delete)
+        return ManagedCache(context: context)
+    }
 }
 
 public final class CoreDataFeedStore: FeedStore {
@@ -39,7 +45,7 @@ public final class CoreDataFeedStore: FeedStore {
         let context = self.context
         context.perform {
             do {
-                let managedCache = ManagedCache(context: context)
+                let managedCache = try ManagedCache.uniqueManagedCache(in: context)
                 managedCache.feed = NSOrderedSet(array: feed.map {
                     let managedFeedImage = ManagedFeedImage(context: context)
                     managedFeedImage.id = $0.id
