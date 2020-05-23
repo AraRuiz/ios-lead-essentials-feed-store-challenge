@@ -26,24 +26,17 @@ private class ManagedCache: NSManagedObject {
 
 public final class CoreDataFeedStore: FeedStore {
     private let container: NSPersistentContainer
+    private let context: NSManagedObjectContext
     
-    public init(storeURL: URL, bundle: Bundle = .main) {
-        let modelURL = bundle.url(forResource: "CoreDataFeedStore", withExtension: "momd")!
-        let model = NSManagedObjectModel(contentsOf: modelURL)!
-        container = NSPersistentContainer(name: "CoreDataFeedStore", managedObjectModel: model)
-        let description = NSPersistentStoreDescription(url: storeURL)
-        container.persistentStoreDescriptions = [description]
-        container.loadPersistentStores { storeDescription, error in
-            if let error = error {
-                print("Unresolved error \(error)")
-            }
-        }
+    public init(storeURL: URL, bundle: Bundle = .main) throws {
+        container = try NSPersistentContainer.load(modelName: "CoreDataFeedStore", url: storeURL, in: bundle)
+        context = container.newBackgroundContext()
     }
     
     public func deleteCachedFeed(completion: @escaping DeletionCompletion) {}
     
     public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-        let context = container.viewContext
+        let context = self.context
         context.perform {
             do {
                 let managedCache = ManagedCache(context: context)
@@ -67,7 +60,7 @@ public final class CoreDataFeedStore: FeedStore {
     }
     
     public func retrieve(completion: @escaping RetrievalCompletion) {
-        let context = container.viewContext
+        let context = self.context
         context.perform {
             do {
                 let request = NSFetchRequest<ManagedCache>(entityName: "ManagedCache")
@@ -84,5 +77,33 @@ public final class CoreDataFeedStore: FeedStore {
                 completion(.failure(error))
             }
         }
+    }
+}
+
+private extension NSPersistentContainer {
+    enum LoadingError: Swift.Error {
+        case modelNotFound
+        case loadPersistentStoresFail(Swift.Error)
+    }
+    
+    static func load(modelName: String, url: URL, in bundle: Bundle) throws -> NSPersistentContainer {
+        guard let model = NSManagedObjectModel.with(modelName: modelName, in: bundle) else {
+            throw LoadingError.modelNotFound
+        }
+        let container = NSPersistentContainer(name: modelName, managedObjectModel: model)
+        let description = NSPersistentStoreDescription(url: url)
+        container.persistentStoreDescriptions = [description]
+        var error: Swift.Error?
+        container.loadPersistentStores { error = $1 }
+        try error.map {
+            throw LoadingError.loadPersistentStoresFail($0)
+        }
+        return container
+    }
+}
+
+private extension NSManagedObjectModel {
+    static func with(modelName: String, in bundle: Bundle) -> NSManagedObjectModel? {
+        return bundle.url(forResource: modelName, withExtension: "momd").flatMap { NSManagedObjectModel(contentsOf: $0) }
     }
 }
