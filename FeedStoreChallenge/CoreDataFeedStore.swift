@@ -9,31 +9,6 @@
 import Foundation
 import CoreData
 
-@objc(ManagedFeedImage)
-private class ManagedFeedImage: NSManagedObject {
-    @NSManaged public var id: UUID
-    @NSManaged public var imageDescription: String?
-    @NSManaged public var location: String?
-    @NSManaged public var url: URL
-    @NSManaged public var cache: ManagedCache
-}
-
-@objc(ManagedCache)
-private class ManagedCache: NSManagedObject {
-    @NSManaged public var timestamp: Date
-    @NSManaged public var feed: NSOrderedSet
-    
-    static func get(from context: NSManagedObjectContext) throws -> ManagedCache? {
-        let request = NSFetchRequest<ManagedCache>(entityName: "ManagedCache")
-        return try context.fetch(request).first
-    }
-    
-    static func uniqueManagedCache(in context: NSManagedObjectContext) throws -> ManagedCache {
-        try get(from: context).map(context.delete)
-        return ManagedCache(context: context)
-    }
-}
-
 public final class CoreDataFeedStore: FeedStore {
     private let container: NSPersistentContainer
     private let context: NSManagedObjectContext
