@@ -23,9 +23,13 @@ private class ManagedCache: NSManagedObject {
     @NSManaged public var timestamp: Date
     @NSManaged public var feed: NSOrderedSet
     
-    static func uniqueManagedCache(in context: NSManagedObjectContext) throws -> ManagedCache {
+    static func get(from context: NSManagedObjectContext) throws -> ManagedCache? {
         let request = NSFetchRequest<ManagedCache>(entityName: "ManagedCache")
-        try context.fetch(request).first.map(context.delete)
+        return try context.fetch(request).first
+    }
+    
+    static func uniqueManagedCache(in context: NSManagedObjectContext) throws -> ManagedCache {
+        try get(from: context).map(context.delete)
         return ManagedCache(context: context)
     }
 }
@@ -40,7 +44,16 @@ public final class CoreDataFeedStore: FeedStore {
     }
     
     public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-        completion(nil)
+        let context = self.context
+        context.perform {
+            do {
+                try ManagedCache.get(from: context).map(context.delete)
+                try context.save()
+                completion(nil)
+            } catch {
+                completion(error)
+            }
+        }
     }
     
     public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
