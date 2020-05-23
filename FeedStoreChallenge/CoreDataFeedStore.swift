@@ -9,31 +9,6 @@
 import Foundation
 import CoreData
 
-@objc(ManagedFeedImage)
-private class ManagedFeedImage: NSManagedObject {
-    @NSManaged public var id: UUID
-    @NSManaged public var imageDescription: String?
-    @NSManaged public var location: String?
-    @NSManaged public var url: URL
-    @NSManaged public var cache: ManagedCache
-}
-
-@objc(ManagedCache)
-private class ManagedCache: NSManagedObject {
-    @NSManaged public var timestamp: Date
-    @NSManaged public var feed: NSOrderedSet
-    
-    static func get(from context: NSManagedObjectContext) throws -> ManagedCache? {
-        let request = NSFetchRequest<ManagedCache>(entityName: "ManagedCache")
-        return try context.fetch(request).first
-    }
-    
-    static func uniqueManagedCache(in context: NSManagedObjectContext) throws -> ManagedCache {
-        try get(from: context).map(context.delete)
-        return ManagedCache(context: context)
-    }
-}
-
 public final class CoreDataFeedStore: FeedStore {
     private let container: NSPersistentContainer
     private let context: NSManagedObjectContext
@@ -61,15 +36,7 @@ public final class CoreDataFeedStore: FeedStore {
         context.perform {
             do {
                 let managedCache = try ManagedCache.uniqueManagedCache(in: context)
-                managedCache.feed = NSOrderedSet(array: feed.map {
-                    let managedFeedImage = ManagedFeedImage(context: context)
-                    managedFeedImage.id = $0.id
-                    managedFeedImage.imageDescription = $0.description
-                    managedFeedImage.location = $0.location
-                    managedFeedImage.url = $0.url
-                    return managedFeedImage
-                })
-                
+                managedCache.feed = ManagedFeedImage.getManagedFeedImages(from: feed, in: context)
                 managedCache.timestamp = timestamp
                 
                 try context.save()
@@ -84,13 +51,8 @@ public final class CoreDataFeedStore: FeedStore {
         let context = self.context
         context.perform {
             do {
-                let request = NSFetchRequest<ManagedCache>(entityName: "ManagedCache")
-                if let cache = try context.fetch(request).first {
-                    let localFeedImages = cache.feed.compactMap { $0 as? ManagedFeedImage }
-                        .map {
-                            LocalFeedImage(id: $0.id, description: $0.imageDescription, location: $0.location, url: $0.url)
-                    }
-                    completion(.found(feed: localFeedImages, timestamp: cache.timestamp))
+                if let cache = try ManagedCache.get(from: context) {
+                    completion(.found(feed: cache.localFeed, timestamp: cache.timestamp))
                 } else {
                     completion(.empty)
                 }
